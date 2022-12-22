@@ -1,0 +1,20 @@
+
+#include "Shared.gravity"
+
+func itsNine() {
+    return 9
+}
+
+var internalInstance = MyClass()
+
+extern var externalInstance
+
+func main() {
+    var a = itsTen
+    var b = 20
+    System.print(doSomething())
+    doSomethingElse(10, "yup!", true, 0.1)
+    doSomethingShared()
+    internalInstance.iVar1 = 17
+    return a + b + externalInstance.iVar1
+}

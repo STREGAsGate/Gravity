@@ -1,0 +1,11 @@
+
+extern class MyClass
+
+extern var itsTen
+
+extern func doSomething() {}
+extern func doSomethingElse() {}
+
+func doSomethingShared() {
+    System.print("Did something shared.")
+}

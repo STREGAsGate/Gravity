@@ -1,0 +1,11 @@
+# Auto detect text files and perform LF normalization
+ * text=auto
+ *.gravity      eol=lf
+
+ # Don't calculate the GravityC source when determining project languages
+ Sources/GravityC/** linguist-vendored
+ Sources/GravityCTests/** linguist-vendored
+ Sources/GravityTests/** linguist-vendored
+
+ # Don't calculate the .gravity source when determining project languages
+ **.gravity linguist-vendored

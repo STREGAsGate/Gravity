@@ -1,0 +1,23 @@
+name: WebAssembly
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build-WASI:
+
+    runs-on: ubuntu-latest
+
+    container:
+      image: ghcr.io/swiftwasm/carton:latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Build
+      run: swift build -c debug --target Gravity --triple wasm32-unknown-wasi
+#     Tests require URL loading, and can't be done with wasm.
+#     - name: Test
+#       run: carton test
