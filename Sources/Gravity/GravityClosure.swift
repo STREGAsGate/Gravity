@@ -27,7 +27,7 @@ public class GravityClosure: GravityValueEmitting, GravityClosureEmitting {
     }
     
     @discardableResult @inline(__always)
-    internal func run(withArguments args: [gravity_value_t], sender: GravityValueEmitting? = nil) throws -> GravityValue {
+    public func run(withArguments args: [gravity_value_t], sender: GravityValueEmitting? = nil) throws -> GravityValue {
         var args = args
         gravity_vm_runclosure(gravity.vm, gClosure, sender?.gValue ?? gravity_value_from_null(), &args, UInt16(args.count))
 
