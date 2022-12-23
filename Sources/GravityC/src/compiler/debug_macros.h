@@ -18,6 +18,7 @@
 #include <limits.h>
 #include <float.h>
 #include <math.h>
+#include <assert.h>
 #include "../shared/gravity_memory.h"
 #include "../shared/gravity_config.h"
 
