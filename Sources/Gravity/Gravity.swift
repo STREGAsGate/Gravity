@@ -402,3 +402,9 @@ extension Gravity: GravityGetFuncExtended {
         return try getFunc(name).run(withArguments: args.map({$0.gValue}))
     }
 }
+
+extension Gravity: Equatable {
+    public static func ==(lhs: Gravity, rhs: Gravity) -> Bool {
+        return lhs.vm == rhs.vm
+    }
+}
