@@ -302,8 +302,8 @@ extension GravityValue {
 
 // MARK: - Closure
 extension GravityValue {
-    @inline(__always) @usableFromInline
-    internal func getClosure(gravity: Gravity, sender: GravityValueEmitting?) -> GravityClosure {
+    @inline(__always)
+    public func getClosure(gravity: Gravity, sender: GravityValueEmitting?) -> GravityClosure {
         assert(valueType == .closure, "Expected \"closure\" but found \"\(valueType)\".")
         let closure = unsafeBitCast(gValue.p, to: UnsafeMutablePointer<gravity_closure_t>.self)
         return GravityClosure(gravity: gravity, closure: closure, sender: sender)
@@ -312,8 +312,8 @@ extension GravityValue {
 
 // MARK: - Instance
 extension GravityValue {
-    @inline(__always) @usableFromInline
-    internal func getInstance(gravity: Gravity) -> GravityInstance {
+    @inline(__always)
+    public func getInstance(gravity: Gravity) -> GravityInstance {
         assert(valueType == .instance, "Expected \"instance\" but found \"\(valueType)\".")
         return GravityInstance(value: self, gravity: gravity)
     }
