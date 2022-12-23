@@ -27,12 +27,27 @@ public class GravityClosure: GravityValueEmitting, GravityClosureEmitting {
     }
     
     @discardableResult @inline(__always)
-    public func run(withArguments args: [gravity_value_t], sender: GravityValueEmitting? = nil) throws -> GravityValue {
+    internal func run(withArguments args: [gravity_value_t], sender: GravityValueEmitting? = nil) throws -> GravityValue {
         var args = args
         gravity_vm_runclosure(gravity.vm, gClosure, sender?.gValue ?? gravity_value_from_null(), &args, UInt16(args.count))
 
         if let error = gravity.recentError {throw error}
 
         return GravityValue(gValue: gravity_vm_result(gravity.vm))
+    }
+    
+    @discardableResult @inline(__always)
+    public func run() throws -> GravityValue {
+        return try run(withArguments: nil)
+    }
+    
+    @discardableResult @inline(__always)
+    public func run(withArguments args: [GravityValue]) throws -> GravityValue {
+        return try run(withArguments: args.map({$0.gValue}))
+    }
+    
+    @discardableResult @inline(__always)
+    public func run(withArguments args: GravityValue...) throws -> GravityValue {
+        return try run(withArguments: args.map({$0.gValue}))
     }
 }
