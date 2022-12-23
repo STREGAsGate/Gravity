@@ -56,6 +56,11 @@ public class Gravity {
     
     var loadedFilenames: [UInt32:String] = [:]
     
+    /// Returns true if the compiled script included the additional sourece
+    public func compiledSourceIncluded(fileName: String) -> Bool {
+        return loadedFilenames.values.contains(where: {$0 == fileName})
+    }
+    
     internal lazy var compilerUserData: GravityCompilerUserData = GravityCompilerUserData(gravity: self)
     internal func compilerUserDataReference() -> UnsafeMutableRawPointer {
         return Unmanaged.passUnretained(compilerUserData).toOpaque()
