@@ -63,7 +63,7 @@ public class GravityClass: GravityValueEmitting, GravityClassEmitting {
      - parameter name: The name of the function as written in a gravity script.
      - parameter function: A swift function or closure to be called when this func is called in the gravity script.
      */
-    public func addFunc(_ key: String, to function: @escaping GravitySwiftInstanceFunctionReturns) {
+    public func addFunc(_ key: String, calling function: @escaping GravitySwiftInstanceFunctionReturns) {
         key.withCString { cName in
             var functionName = key
             let gFunc = gravity_function_new_bridged(gravity.vm, cName, &functionName)
@@ -89,12 +89,12 @@ public class GravityClass: GravityValueEmitting, GravityClassEmitting {
      - parameter function: A swift function or closure to be called when this func is called in the gravity script.
      */
     @inline(__always)
-    public func addFunc(_ key: String, to function: @escaping GravitySwiftInstanceFunction) {
+    public func addFunc(_ key: String, calling function: @escaping GravitySwiftInstanceFunction) {
         let rFunc: GravitySwiftInstanceFunctionReturns = {gravity, sender, args -> GravityValue in
             function(gravity, sender, args)
             return .null
         }
-        addFunc(key, to: rFunc)
+        addFunc(key, calling: rFunc)
     }
     
     /// Initialize this GravityClass into a GravityInstance
