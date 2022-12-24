@@ -14,11 +14,6 @@ public struct GravityValue: GravityValueEmitting {
     internal init(gValue: gravity_value_t) {
         self.gValue = gValue
     }
-    
-    @inline(__always)
-    internal init(_ emitter: GravityValueEmitting) {
-        self.init(gValue: emitter.gValue)
-    }
 }
 
 public extension GravityValue {
@@ -90,7 +85,7 @@ public extension GravityValue {
 // MARK: - Bool
 extension GravityValue {
     @inline(__always)
-    internal init(_ value: Bool) {
+    public init(_ value: Bool) {
         gValue = gravity_value_from_bool(value)
     }
     @inlinable
@@ -102,7 +97,7 @@ extension GravityValue {
 // MARK: - Int
 extension GravityValue {
     @inline(__always)
-    internal init<T: BinaryInteger>(_ value: T) {
+    public init<T: BinaryInteger>(_ value: T) {
         gValue = gravity_value_from_int(gravity_int_t(value))
     }
     @inlinable
@@ -303,10 +298,19 @@ extension GravityValue {
 // MARK: - Closure
 extension GravityValue {
     @inline(__always)
-    public func getClosure(gravity: Gravity, sender: GravityValueEmitting?) -> GravityClosure {
-        assert(valueType == .closure, "Expected \"closure\" but found \"\(valueType)\".")
+    public func getClosure(gravity: Gravity, sender: GravityValueConvertible?) -> GravityClosure {
+        assert(valueType == .closure, "Expected \"closure\" but found \"\(valueType)\". Check your spelling.")
         let closure = unsafeBitCast(gValue.p, to: UnsafeMutablePointer<gravity_closure_t>.self)
         return GravityClosure(gravity: gravity, closure: closure, sender: sender)
+    }
+}
+
+// MARK: - Class
+extension GravityValue {
+    @inline(__always)
+    public func getClass(gravity: Gravity) -> GravityClass {
+        assert(valueType == .class, "Expected \"class\" but found \"\(valueType)\". Check your spelling.")
+        return GravityClass(value: self, gravity: gravity)
     }
 }
 
@@ -314,7 +318,7 @@ extension GravityValue {
 extension GravityValue {
     @inline(__always)
     public func getInstance(gravity: Gravity) -> GravityInstance {
-        assert(valueType == .instance, "Expected \"instance\" but found \"\(valueType)\".")
+        assert(valueType == .instance, "Expected \"instance\" but found \"\(valueType)\". Check your spelling.")
         return GravityInstance(value: self, gravity: gravity)
     }
 }

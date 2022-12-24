@@ -51,6 +51,16 @@ public class Gravity {
     }
     
     @inline(__always)
+    var sourceCodeSearchPaths: Set<URL> {
+        get {
+            return Self.storage[vm]!.sourceCodeSearchPaths
+        }
+        set {
+            Self.storage[vm]!.sourceCodeSearchPaths = newValue
+        }
+    }
+    
+    @inline(__always)
     var loadedFilesByID: [UInt32:URL] {
         get {
             return Self.storage[vm]!.loadedFilesByID
@@ -89,7 +99,7 @@ public class Gravity {
      - returns: true if the compiled script included the additional sourece
      */
     public func compiledSourceDidLoadFile(_ fileName: String) -> Bool {
-        return loadedFilesByID.values.contains(where: {$0.lastPathComponent == fileName})
+        return loadedFilesByID.values.contains(where: {$0.lastPathComponent.compare(fileName) == .orderedSame})
     }
     
     @inline(__always)
@@ -182,15 +192,20 @@ public class Gravity {
     @discardableResult
     public func runMain() throws -> GravityValue {
         guard let mainClosure = mainClosure else {throw "No main closure found. Did you forget to compile?"}
+        self.didRunMain = true
         gravity_vm_runmain(vm, mainClosure)
         if let error = recentError {throw error}
-        self.didRunMain = true
         return GravityValue(gValue: gravity_vm_result(vm))
     }
     
     @inline(__always)
+    public func getClass(_ key: String) -> GravityClass {
+        return getVar(key).getClass(gravity: self)
+    }
+    
+    @inline(__always)
     public func setClass(_ key: String, to value: GravityClass) {
-        setVar(key, to: value)
+        setVar(key, to: value.gravityValue)
     }
     
     /**
@@ -337,7 +352,16 @@ extension Gravity {
         var loadedFilesByID: [UInt32:URL] = [:]
         
         #if canImport(Foundation) && !os(WASI)
-        var sourceCodeBaseURL: URL? = nil
+        var sourceCodeBaseURL: URL? = nil {
+            willSet {
+                if let newValue = newValue {
+                    sourceCodeSearchPaths.insert(newValue)
+                }else{
+                    sourceCodeSearchPaths.removeAll(keepingCapacity: true)
+                }
+            }
+        }
+        var sourceCodeSearchPaths: Set<URL> = []
         #endif
         
         var userDataReferences: Set<UserDataReference> = []

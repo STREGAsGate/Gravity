@@ -18,10 +18,21 @@ public class GravityInstance: GravityValueEmitting, GravityInstanceEmitting {
         self.gInstance = gravity_instance_new(gravity.vm, gravityClass.gClass)
     }
     
-    internal init(value: GravityValue, gravity: Gravity) {
+    lazy var gravitySuper: GravityInstance? = {
+        // If we are the base class there is no super
+        guard self.gravityClassName != "Object" else {return nil}
+        guard let v = gInstance.pointee.objclass?.pointee.superclass else {return nil}
+        return GravityInstance(value: v, gravity: gravity)
+    }()
+    
+    internal convenience init(value: GravityValue, gravity: Gravity) {
         assert(value.valueType == .instance)
+        self.init(value: value.gValue.p, gravity: gravity)
+    }
+    
+    internal init(value: UnsafeMutablePointer<gravity_object_t>!, gravity: Gravity) {
         self.gravity = gravity
-        self.gInstance = unsafeBitCast(value.gValue.p, to: UnsafeMutablePointer<gravity_instance_t>.self)
+        self.gInstance = unsafeBitCast(value, to: UnsafeMutablePointer<gravity_instance_t>.self)
     }
     
     public var gValue: gravity_value_t {
@@ -44,16 +55,15 @@ extension GravityInstance: GravityGetVarExtendedVMReferencing  {
             //TODO: Add a caching system to return the same instance over and over.
             fatalError("Another instance was created by you invalidating this one.")
         }
-        let htableValue = key.withCString { key in
-            return gravity_hash_lookup_cstring(htable, key)
+        if let htableValue = key.withCString({gravity_hash_lookup_cstring(htable, $0)?.pointee}) {
+            let closure = GravityValue(gValue: htableValue).getClosure(gravity: gravity, sender: self)
+            if let index = closure.gClosure.pointee.f?.pointee.index {
+                return GravityValue(gValue: gInstance.pointee.ivars[Int(index)])
+            }else{
+                print("Gravity: Failed to obtain var \(key).")
+            }
         }
-        let closure = GravityValue(gValue: htableValue!.pointee).getClosure(gravity: gravity, sender: self)
-        if let index = closure.gClosure.pointee.f?.pointee.index {
-            return GravityValue(gValue: gInstance.pointee.ivars[Int(index)])
-        }else{
-            print("Gravity: Failed to obtain var \(key).")
-        }
-        return .null
+        return gravitySuper?.getVar(key) ?? .null
     }
 }
 

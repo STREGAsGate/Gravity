@@ -34,7 +34,7 @@ internal func errorCallback(vm: OpaquePointer?, errorType: error_type_t, descrip
     }
 }
 extension Gravity {
-    struct Error: Swift.Error, CustomStringConvertible {
+    public struct Error: Swift.Error, CustomStringConvertible {
         let errorType: error_type_t
         let fileName: String
         let row: Int32

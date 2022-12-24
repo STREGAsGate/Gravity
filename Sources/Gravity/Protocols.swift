@@ -9,16 +9,16 @@
 import GravityC
 
 //MARK: - Emitters
-public protocol GravityValueEmitting {
+protocol GravityValueEmitting {
     var gValue: gravity_value_t {get}
 }
-public protocol GravityClassEmitting {
+protocol GravityClassEmitting {
     var gClass: UnsafeMutablePointer<gravity_class_t>! {get}
 }
-public protocol GravityInstanceEmitting {
+protocol GravityInstanceEmitting {
     var gInstance: UnsafeMutablePointer<gravity_instance_t> {get}
 }
-public protocol GravityClosureEmitting {
+protocol GravityClosureEmitting {
     var gClosure: UnsafeMutablePointer<gravity_closure_t>! {get}
 }
 
@@ -83,7 +83,7 @@ public protocol GravityGetVarExtendedVMReferencing: GravityGetVarExtended, Gravi
 extension GravityGetVarExtendedVMReferencing {
     @inline(__always)
     public func getVar(_ key: String) -> GravityClosure {
-        return getVar(key).getClosure(gravity: _gravity, sender: self as? GravityValueEmitting)
+        return getVar(key).getClosure(gravity: _gravity, sender: self as? GravityValueConvertible)
     }
     
     @inlinable
@@ -141,8 +141,8 @@ extension GravitySetVarExtended {
      - parameter key: The name of the `extern var` as written in the gravity script.
      */
     @inline(__always)
-    public func setVar(_ key: String, to value: GravityValueEmitting) {
-        self.setVar(key, to: GravityValue(value))
+    public func setVar(_ key: String, to value: GravityValueConvertible) {
+        self.setVar(key, to: value.gravityValue)
     }
 }
 

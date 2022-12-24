@@ -20,6 +20,11 @@ public class GravityClass: GravityValueEmitting, GravityClassEmitting {
         }
     }
     
+    internal init(value: GravityValue, gravity: Gravity) {
+        self.gravity = gravity
+        self.gClass = unsafeBitCast(value.gValue.p, to: UnsafeMutablePointer<gravity_class_t>.self)
+    }
+    
     internal init(gravity: Gravity, gClass: UnsafeMutablePointer<gravity_class_t>) {
         self.gravity = gravity
         self.gClass = gClass
