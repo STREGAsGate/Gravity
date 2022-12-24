@@ -78,9 +78,9 @@ public class GravityClass: GravityValueEmitting, GravityClassEmitting {
             gravity_class_bind(gClass, key, gValue)
         }
         
-        var funcDatabase = Gravity.cBridgedFunctionMap[gravity.vm] ?? [:]
+        var funcDatabase = Gravity.storage[gravity.vm]?.cBridgedFunctionMap ?? [:]
         funcDatabase[key] = function
-        Gravity.cBridgedFunctionMap[gravity.vm] = funcDatabase
+        Gravity.storage[gravity.vm]?.cBridgedFunctionMap = funcDatabase
     }
     
     /**
@@ -108,13 +108,6 @@ public typealias GravitySwiftInstanceFunctionReturns = (_ gravity: Gravity, _ se
 public typealias GravitySwiftInstanceFunction = (_ gravity: Gravity, _ sender: GravityInstance, _ args: [GravityValue]) -> Void
 
 
-extension Gravity {
-    internal static var cBridgedFunctionMap: [OpaquePointer:[String:GravitySwiftInstanceFunctionReturns]] = [:]
-    @inline(__always) internal func cleanupCBridgedFunctions() {
-        Gravity.cBridgedFunctionMap.removeValue(forKey: vm)
-    }
-}
-
 internal class GravityCFuncBridgedUserData {
     let functionName: String
     let gravityClass: GravityClass
@@ -129,8 +122,8 @@ internal func gravityCFuncBridged(vm: OpaquePointer!, xdata: UnsafeMutableRawPoi
     // We use userData to store the Swift functions retrieval key
     guard let userData = unsafeBitCast(xdata, to: Optional<GravityCFuncBridgedUserData>.self) else {return true}
     // This should never fail
-    guard let swiftFunction = Gravity.cBridgedFunctionMap[vm]?[userData.functionName] else {fatalError()}
-    
+    guard let swiftFunction = Gravity.storage[vm]?.cBridgedFunctionMap[userData.functionName] else {fatalError()}
+
     // An unmanged Gravity instance
     let gravity = Gravity(vm: vm)
     // Convert args to GravityValue(s)

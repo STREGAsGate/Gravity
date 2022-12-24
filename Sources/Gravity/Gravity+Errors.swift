@@ -9,16 +9,16 @@
 import GravityC
 
 internal func errorCallback(vm: OpaquePointer?, errorType: error_type_t, description: UnsafePointer<CChar>?, errorDesc: error_desc_t, xdata: UnsafeMutableRawPointer?) -> Void {
-    guard let userData = unsafeBitCast(xdata, to: Optional<GravityCompilerUserData>.self) else {return}
     guard let description = description else {return}
-
     let string = String(cString: description)
     
+    guard let gravity = Gravity(unwrappingVM: vm) ?? unsafeBitCast(xdata, to: Optional<Gravity>.self) else {return}
+    
     #if DEBUG // When running unit tests throw everything
-    if userData.gravity.unitTestExpected != nil {
-        if userData.gravity.recentError == nil {
-            let fileName = userData.gravity.loadedFilenames[errorDesc.fileid] ?? "UNKNOWN_GRAVITY_FILE"
-            userData.gravity.recentError = Gravity.Error(errorType: errorType, fileName: fileName, row: Int32(errorDesc.lineno), column: Int32(errorDesc.colno), explanation: string, details: errorDesc)
+    if gravity.unitTestExpected != nil {
+        if gravity.recentError == nil {
+            let fileName = gravity.filenameForID(errorDesc.fileid) ?? "UNKNOWN_GRAVITY_FILE"
+            gravity.recentError = Gravity.Error(errorType: errorType, fileName: fileName, row: Int32(errorDesc.lineno), column: Int32(errorDesc.colno), explanation: string, details: errorDesc)
         }
         return
     }
@@ -26,11 +26,11 @@ internal func errorCallback(vm: OpaquePointer?, errorType: error_type_t, descrip
     
     if errorType == GRAVITY_WARNING || errorType == GRAVITY_ERROR_NONE {
         print("Gravity:", string) // Dont throw warnings or not-error errors
-    }else if userData.gravity.recentError == nil {
+    }else if gravity.recentError == nil {
         // Multiple errors can be emmited from gravity before Swift gets a chance to throw,
         // se we only store the first error.
-        let fileName = userData.gravity.loadedFilenames[errorDesc.fileid] ?? "UNKNOWN_GRAVITY_FILE"
-        userData.gravity.recentError = Gravity.Error(errorType: errorType, fileName: fileName, row: Int32(errorDesc.lineno), column: Int32(errorDesc.colno), explanation: string, details: errorDesc)
+        let fileName = gravity.filenameForID(errorDesc.fileid) ?? "UNKNOWN_GRAVITY_FILE"
+        gravity.recentError = Gravity.Error(errorType: errorType, fileName: fileName, row: Int32(errorDesc.lineno), column: Int32(errorDesc.colno), explanation: string, details: errorDesc)
     }
 }
 extension Gravity {

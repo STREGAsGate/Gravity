@@ -20,16 +20,6 @@ extension Gravity {
     }
 }
 
-internal class GravityCompilerUserData {
-    unowned let gravity: Gravity
-    #if canImport(Foundation) && !os(WASI)
-    var baseURL: URL? = nil
-    #endif
-    init(gravity: Gravity) {
-        self.gravity = gravity
-    }
-}
-
 internal var gravityDelegate: gravity_delegate_t = {
     var delegate: gravity_delegate_t = gravity_delegate_t()
     delegate.error_callback = errorCallback(vm:errorType:description:errorDesc:xdata:)
@@ -47,23 +37,59 @@ internal var gravityDelegate: gravity_delegate_t = {
 public class Gravity {
     let vm: OpaquePointer
     var isManaged: Bool
-    var mainClosure: UnsafeMutablePointer<gravity_closure_t>? = nil
-    var didRunMain: Bool = false
-    var recentError: Error? = nil
-    #if DEBUG
-    var unitTestExpected: Testing? = nil
-    #endif
     
-    var loadedFilenames: [UInt32:String] = [:]
-    
-    /// Returns true if the compiled script included the additional sourece
-    public func compiledSourceIncluded(fileName: String) -> Bool {
-        return loadedFilenames.values.contains(where: {$0 == fileName})
+    @inline(__always)
+    var didRunMain: Bool {
+        get {Self.storage[vm]!.didRunMain}
+        set {Self.storage[vm]!.didRunMain = newValue}
     }
     
-    internal lazy var compilerUserData: GravityCompilerUserData = GravityCompilerUserData(gravity: self)
-    internal func compilerUserDataReference() -> UnsafeMutableRawPointer {
-        return Unmanaged.passUnretained(compilerUserData).toOpaque()
+    @inline(__always)
+    var sourceCodeBaseURL: URL? {
+        get {Self.storage[vm]!.sourceCodeBaseURL}
+        set {Self.storage[vm]!.sourceCodeBaseURL = newValue}
+    }
+    
+    @inline(__always)
+    var loadedFilesByID: [UInt32:URL] {
+        get {
+            return Self.storage[vm]!.loadedFilesByID
+        }
+        set {
+            Self.storage[vm]!.loadedFilesByID = newValue
+        }
+    }
+    
+    @inline(__always)
+    func filenameForID(_ id: UInt32) -> String? {
+        return Self.storage[vm]!.loadedFilesByID[id]?.lastPathComponent
+    }
+    
+    @inline(__always)
+    var mainClosure: UnsafeMutablePointer<gravity_closure_t>? {
+        get {Self.storage[vm]!.mainClosure}
+        set {Self.storage[vm]!.mainClosure = newValue}
+    }
+    
+    @inline(__always)
+    var recentError: Error? {
+        get {Self.storage[vm]!.recentError}
+        set {Self.storage[vm]!.recentError = newValue}
+    }
+    
+    @inline(__always)
+    var unitTestExpected: Testing? {
+        get {Self.storage[vm]!.unitTestExpected}
+        set {Self.storage[vm]!.unitTestExpected = newValue}
+    }
+    
+    /**
+     Check if the compiled gravity script included an external script file.
+     - parameter fileName: The name of the gravity script to check for.
+     - returns: true if the compiled script included the additional sourece
+     */
+    public func compiledSourceDidLoadFile(_ fileName: String) -> Bool {
+        return loadedFilesByID.values.contains(where: {$0.lastPathComponent == fileName})
     }
     
     @inline(__always)
@@ -83,7 +109,11 @@ public class Gravity {
             return lhs.reference === rhs.reference
         }
     }
-    internal var userDataReferences: Set<UserDataReference> = []
+    @inline(__always)
+    internal var userDataReferences: Set<UserDataReference> {
+        get {Self.storage[vm]!.userDataReferences}
+        set {Self.storage[vm]!.userDataReferences = newValue}
+    }
     internal func retainedUserDataPointer(from reference: AnyObject) -> UnsafeMutableRawPointer {
         let userDataP = Unmanaged.passUnretained(reference).toOpaque()
         userDataReferences.insert(UserDataReference(reference: reference))
@@ -94,9 +124,17 @@ public class Gravity {
     public init() {
         self.vm = gravity_vm_new(&gravityDelegate)
         self.isManaged = true
+        assert(Self.storage[vm] == nil)
+        Self.storage[vm] = GravityStorage()
     }
     
     internal init(vm: OpaquePointer) {
+        self.vm = vm
+        self.isManaged = false
+    }
+    
+    internal init?(unwrappingVM vm: OpaquePointer?) {
+        guard let vm = vm else {return nil}
         self.vm = vm
         self.isManaged = false
     }
@@ -117,7 +155,7 @@ public class Gravity {
             let isDebug = false
             #endif
             
-            gravityDelegate.xdata = compilerUserDataReference()
+            gravityDelegate.xdata = Unmanaged.passUnretained(self).toOpaque()
             
             let compiler: OpaquePointer = gravity_compiler_create(&gravityDelegate)
             if let closure = gravity_compiler_run(compiler, cString, sourceCode.count, 0, true, addDebug ?? isDebug) {
@@ -136,7 +174,7 @@ public class Gravity {
             }
         }
         #if canImport(Foundation) && !os(WASI)
-        compilerUserData.baseURL = nil
+        sourceCodeBaseURL = nil
         #endif
     }
     
@@ -241,7 +279,7 @@ public class Gravity {
      - parameter superClass: An optional super class for the gravity class.
      - returns: A `GravityClass` representing a gravity class.
      */
-    public func createClass(named name: String, superClass: GravityClass? = nil) -> GravityClass {
+    public func createClass(_ name: String, superClass: GravityClass? = nil) -> GravityClass {
         let theClass = GravityClass(name: name, superClass: superClass, gravity: self)
         name.withCString { cString in
             gravity_vm_setvalue(vm, cString, theClass.gValue)
@@ -251,8 +289,7 @@ public class Gravity {
     
     deinit {
         guard isManaged else {return}
-        self.cleanupCInternalFunctions()
-        self.cleanupCBridgedFunctions()
+        Self.cleanupStorage(vm)
         gravity_vm_free(vm)
         gravity_core_free()
     }
@@ -266,7 +303,7 @@ internal func gravityCFuncInternal(vm: OpaquePointer!, args: UnsafeMutablePointe
         return String(cString: cName)
     }()
     
-    guard let function = Gravity.cInternalFunctionMap[vm]?[functionName] else {fatalError()}
+    guard let function = Gravity.storage[vm]?.cInternalFunctionMap[functionName] else {fatalError()}
     var args = UnsafeBufferPointer(start: args, count: Int(nargs)).map({GravityValue(gValue: $0)})
     args.removeFirst()// The first is always the closure being called
     let result = function(Gravity(vm: vm), args)
@@ -288,9 +325,29 @@ internal func _gravityHandleCFuncReturn(vm: OpaquePointer, returnValue: GravityV
 }
 
 extension Gravity {
-    internal static var cInternalFunctionMap: [OpaquePointer:[String:GravitySwiftFunctionReturns]] = [:]
-    @inline(__always) fileprivate func cleanupCInternalFunctions() {
-        Gravity.cInternalFunctionMap.removeValue(forKey: vm)
+    internal static var storage: [OpaquePointer : GravityStorage] = [:]
+    internal struct GravityStorage {
+        var mainClosure: UnsafeMutablePointer<gravity_closure_t>? = nil
+        var didRunMain: Bool = false
+        var recentError: Error? = nil
+        #if DEBUG
+        var unitTestExpected: Testing? = nil
+        #endif
+        
+        var loadedFilesByID: [UInt32:URL] = [:]
+        
+        #if canImport(Foundation) && !os(WASI)
+        var sourceCodeBaseURL: URL? = nil
+        #endif
+        
+        var userDataReferences: Set<UserDataReference> = []
+        
+        var cInternalFunctionMap: [String:GravitySwiftFunctionReturns] = [:]
+        var cBridgedFunctionMap: [String:GravitySwiftInstanceFunctionReturns] = [:]
+    }
+    @inline(__always)
+    internal static func cleanupStorage(_ vm: OpaquePointer) {
+        storage.removeValue(forKey: vm)
     }
     
     /**
@@ -310,9 +367,9 @@ extension Gravity {
             gravity_vm_setvalue(vm, cKey, gValue)
         }
         
-        var funcDatabase = Self.cInternalFunctionMap[vm] ?? [:]
+        var funcDatabase = Self.storage[vm]?.cInternalFunctionMap ?? [:]
         funcDatabase[key] = function
-        Self.cInternalFunctionMap[vm] = funcDatabase
+        Self.storage[vm]?.cInternalFunctionMap = funcDatabase
     }
     
     /**

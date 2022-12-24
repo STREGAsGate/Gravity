@@ -9,9 +9,9 @@
 #if DEBUG
 import GravityC
 
-internal func unittestCallback(vm: OpaquePointer?, errorType: error_type_t, desc: UnsafePointer<CChar>?, note: UnsafePointer<CChar>?, value: gravity_value_t, row: Int32, column: Int32, xdata: UnsafeMutableRawPointer?) {
-    guard let userData = unsafeBitCast(xdata, to: Optional<GravityCompilerUserData>.self) else {return}
-    userData.gravity.unitTestExpected = Gravity.Testing(description: String(cString: desc!), errorType: errorType, row: row, column: column, value: value)
+internal func unittestCallback(vm: OpaquePointer!, errorType: error_type_t, desc: UnsafePointer<CChar>?, note: UnsafePointer<CChar>?, value: gravity_value_t, row: Int32, column: Int32, xdata: UnsafeMutableRawPointer?) {
+    let gravity = Gravity(vm: vm)
+    gravity.unitTestExpected = Gravity.Testing(description: String(cString: desc!), errorType: errorType, row: row, column: column, value: value)
 }
 extension Gravity {
     struct Testing {
