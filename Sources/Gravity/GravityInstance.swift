@@ -56,11 +56,12 @@ extension GravityInstance: GravityGetVarExtendedVMReferencing  {
             fatalError("Another instance was created by you invalidating this one.")
         }
         if let htableValue = key.withCString({gravity_hash_lookup_cstring(htable, $0)?.pointee}) {
-            let closure = GravityValue(gValue: htableValue).getClosure(gravity: gravity, sender: self)
-            if let index = closure.gClosure.pointee.f?.pointee.index {
-                return GravityValue(gValue: gInstance.pointee.ivars[Int(index)])
-            }else{
-                print("Gravity: Failed to obtain var \(key).")
+            if let closure = GravityValue(gValue: htableValue).getClosure(gravity: gravity, sender: self) {
+                if let index = closure.gClosure.pointee.f?.pointee.index {
+                    return GravityValue(gValue: gInstance.pointee.ivars[Int(index)])
+                }else{
+                    print("Gravity: Failed to obtain var \(key).")
+                }
             }
         }
         return gravitySuper?.getVar(key) ?? .null
@@ -77,23 +78,26 @@ extension GravityInstance: GravitySetVarExtended {
             return gravity_hash_lookup_cstring(htable, key).pointee
         }
 
-        let closure = GravityValue(gValue: htableValue).getClosure(gravity: gravity, sender: self)
-        let ivarIndex = UInt32(closure.gClosure.pointee.f.pointee.index)
-        gravity_instance_setivar(gInstance, ivarIndex, value.gValue)
+        if let closure = GravityValue(gValue: htableValue).getClosure(gravity: gravity, sender: self) {
+            let ivarIndex = UInt32(closure.gClosure.pointee.f.pointee.index)
+            gravity_instance_setivar(gInstance, ivarIndex, value.gValue)
+        }else{
+            gravitySuper?.setVar(key, to: value)
+        }
     }
 }
 
 extension GravityInstance: GravityGetFuncExtended {
-    public func getFunc(_ key: String) throws -> GravityClosure {
+    public func getFunc(_ key: String) -> GravityClosure? {
         guard let gValue: gravity_value_t = key.withCString({ key in
             return gravity_hash_lookup_cstring(gInstance.pointee.objclass.pointee.htable, key)
-        })?.pointee else {throw "Gravity Error: Failed to find closure named \(key)."}
+        })?.pointee else {return nil}
         let value = GravityValue(gValue: gValue)
         let valueType = value.valueType
         if valueType != .closure {
-            throw "Gravity Error: Expected closure but found \(valueType)."
+            return nil
         }
-        return value.getClosure(gravity: gravity, sender: self)
+        return value.getClosure(gravity: gravity, sender: self)!
     }
     
     @discardableResult @inline(__always)
@@ -103,11 +107,13 @@ extension GravityInstance: GravityGetFuncExtended {
     
     @discardableResult @inline(__always)
     public func runFunc(_ name: String, withArguments args: [GravityValue]) throws -> GravityValue {
-        return try getFunc(name).run(withArguments: args.map({$0.gValue}), sender: self)
+        guard let closure = getFunc(name) else {throw "Gravity: Failed to get closure \(name)."}
+        return try closure.run(withArguments: args.map({$0.gValue}))
     }
     
     @discardableResult @inline(__always)
     public func runFunc(_ name: String, withArguments args: GravityValue...) throws -> GravityValue {
-        return try getFunc(name).run(withArguments: args.map({$0.gValue}), sender: self)
+        guard let closure = getFunc(name) else {throw "Gravity: Failed to get closure \(name)."}
+        return try closure.run(withArguments: args.map({$0.gValue}))
     }
 }

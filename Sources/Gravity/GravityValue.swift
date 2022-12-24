@@ -298,8 +298,11 @@ extension GravityValue {
 // MARK: - Closure
 extension GravityValue {
     @inline(__always)
-    public func getClosure(gravity: Gravity, sender: GravityValueConvertible?) -> GravityClosure {
-        assert(valueType == .closure, "Expected \"closure\" but found \"\(valueType)\". Check your spelling.")
+    public func getClosure(gravity: Gravity, sender: GravityValueConvertible?) -> GravityClosure? {
+        guard valueType == .closure else {
+            assert(valueType == .null, "Gravity: Expected \"closure\" but found \"\(valueType)\". Check your spelling.")
+            return nil
+        }
         let closure = unsafeBitCast(gValue.p, to: UnsafeMutablePointer<gravity_closure_t>.self)
         return GravityClosure(gravity: gravity, closure: closure, sender: sender)
     }
@@ -308,8 +311,11 @@ extension GravityValue {
 // MARK: - Class
 extension GravityValue {
     @inline(__always)
-    public func getClass(gravity: Gravity) -> GravityClass {
-        assert(valueType == .class, "Expected \"class\" but found \"\(valueType)\". Check your spelling.")
+    public func getClass(gravity: Gravity) -> GravityClass? {
+        guard valueType == .class else {
+            assert(valueType == .null, "Gravity: Expected \"class\" but found \"\(valueType)\". Check your spelling.")
+            return nil
+        }
         return GravityClass(value: self, gravity: gravity)
     }
 }
@@ -317,8 +323,11 @@ extension GravityValue {
 // MARK: - Instance
 extension GravityValue {
     @inline(__always)
-    public func getInstance(gravity: Gravity) -> GravityInstance {
-        assert(valueType == .instance, "Expected \"instance\" but found \"\(valueType)\". Check your spelling.")
+    public func getInstance(gravity: Gravity) -> GravityInstance? {
+        guard valueType == .instance else {
+            assert(valueType == .null, "Gravity: Expected \"instance\" but found \"\(valueType)\". Check your spelling.")
+            return nil
+        }
         return GravityInstance(value: self, gravity: gravity)
     }
 }

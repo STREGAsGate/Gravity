@@ -82,12 +82,12 @@ extension GravityGetVarExtended {
 public protocol GravityGetVarExtendedVMReferencing: GravityGetVarExtended, GravityVMReferencing {}
 extension GravityGetVarExtendedVMReferencing {
     @inline(__always)
-    public func getVar(_ key: String) -> GravityClosure {
+    public func getVar(_ key: String) -> GravityClosure? {
         return getVar(key).getClosure(gravity: _gravity, sender: self as? GravityValueConvertible)
     }
     
     @inlinable
-    public func getVar(_ key: String) throws -> GravityInstance {
+    public func getVar(_ key: String) throws -> GravityInstance? {
         let value = getVar(key)
         if value == .null {
             throw "Gravity Error: Failed to find Instance named \(key)."
@@ -148,5 +148,5 @@ extension GravitySetVarExtended {
 
 // MARK: - GravityGetClosureExtended
 public protocol GravityGetFuncExtended {
-    func getFunc(_ key: String) throws -> GravityClosure
+    func getFunc(_ key: String) -> GravityClosure?
 }

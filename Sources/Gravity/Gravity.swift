@@ -87,11 +87,13 @@ public class Gravity {
         set {Self.storage[vm]!.recentError = newValue}
     }
     
+    #if DEBUG
     @inline(__always)
     var unitTestExpected: Testing? {
         get {Self.storage[vm]!.unitTestExpected}
         set {Self.storage[vm]!.unitTestExpected = newValue}
     }
+    #endif
     
     /**
      Check if the compiled gravity script included an external script file.
@@ -199,7 +201,7 @@ public class Gravity {
     }
     
     @inline(__always)
-    public func getClass(_ key: String) -> GravityClass {
+    public func getClass(_ key: String) -> GravityClass? {
         return getVar(key).getClass(gravity: self)
     }
     
@@ -214,16 +216,8 @@ public class Gravity {
      - returns: A `GravityInstance` which references the script closure/function for `key`.
     */
     @inline(__always)
-    public func getInstance(_ key: String) throws -> GravityInstance {
-        let value = getVar(key)
-        if value == .null {
-            throw "Gravity Error: Failed to find Instance named \(key)."
-        }
-        let valueType = value.valueType
-        if valueType != .instance {
-            throw "Gravity Error: Expected Instance for key \(key). Found \(valueType)."
-        }
-        return value.getInstance(gravity: self)
+    public func getInstance(_ key: String) -> GravityInstance? {
+        return getVar(key).getInstance(gravity: self)
     }
     
     /**
@@ -456,16 +450,8 @@ extension Gravity: GravityGetFuncExtended {
      - returns: A `GravityClosure` which references the script closure/function for `key`.
                 You can call `run()` on the `GravityClosure` to execute the reference script closure.
     */
-    public func getFunc(_ key: String) throws -> GravityClosure {
-        let value = getVar(key)
-        if value == .null {
-            throw "Gravity Error: Failed to find Closure named \(key)."
-        }
-        let valueType = value.valueType
-        if valueType != .closure {
-            throw "Gravity Error: Expected Closure for key \(key). Found \(valueType)."
-        }
-        return value.getClosure(gravity: self, sender: nil)
+    public func getFunc(_ key: String) -> GravityClosure? {
+        return getVar(key).getClosure(gravity: self, sender: nil)
     }
     
     @discardableResult @inline(__always)
@@ -475,12 +461,14 @@ extension Gravity: GravityGetFuncExtended {
     
     @discardableResult @inline(__always)
     public func runFunc(_ name: String, withArguments args: [GravityValue]) throws -> GravityValue {
-        return try getFunc(name).run(withArguments: args.map({$0.gValue}))
+        guard let closure = getFunc(name) else {throw "Gravity: Failed to get closure \(name)."}
+        return try closure.run(withArguments: args.map({$0.gValue}))
     }
     
     @discardableResult @inline(__always)
     public func runFunc(_ name: String, withArguments args: GravityValue...) throws -> GravityValue {
-        return try getFunc(name).run(withArguments: args.map({$0.gValue}))
+        guard let closure = getFunc(name) else {throw "Gravity: Failed to get closure \(name)."}
+        return try closure.run(withArguments: args.map({$0.gValue}))
     }
 }
 
