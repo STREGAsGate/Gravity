@@ -202,7 +202,7 @@ public class Gravity {
     
     @inline(__always)
     public func getClass(_ key: String) -> GravityClass? {
-        return getVar(key).getClass(gravity: self)
+        return getVar(key)?.getClass(gravity: self)
     }
     
     @inline(__always)
@@ -217,7 +217,7 @@ public class Gravity {
     */
     @inline(__always)
     public func getInstance(_ key: String) -> GravityInstance? {
-        return getVar(key).getInstance(gravity: self)
+        return getVar(key)?.getInstance(gravity: self)
     }
     
     /**
@@ -421,11 +421,11 @@ extension Gravity: GravityGetVarExtendedVMReferencing {
      Obtain a value from gravity.
      - parameter key: The name of the `var` as written in the gravity script.
      */
-    public func getVar(_ key: String) -> GravityValue {
+    public func getVar(_ key: String) -> GravityValue? {
         guard didRunMain else {fatalError("Gravity Error: `runMain()` must be called before you can do this.")}
         return key.withCString { cString in
             let value: gravity_value_t = gravity_vm_getvalue(vm, cString, UInt32(key.utf8.count))
-            return GravityValue(gValue: value)
+            return GravityValue(optionalGValue: value)
         }
     }
 }
@@ -451,7 +451,7 @@ extension Gravity: GravityGetFuncExtended {
                 You can call `run()` on the `GravityClosure` to execute the reference script closure.
     */
     public func getFunc(_ key: String) -> GravityClosure? {
-        return getVar(key).getClosure(gravity: self, sender: nil)
+        return getVar(key)?.getClosure(gravity: self, sender: nil)
     }
     
     @discardableResult @inline(__always)

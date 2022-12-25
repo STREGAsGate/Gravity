@@ -50,21 +50,22 @@ extension GravityInstance: GravityGetVarExtendedVMReferencing  {
         return gravity
     }
     
-    public func getVar(_ key: String) -> GravityValue {
+    public func getVar(_ key: String) -> GravityValue? {
         guard let htable = gInstance.pointee.objclass?.pointee.htable else {
             //TODO: Add a caching system to return the same instance over and over.
             fatalError("Another instance was created by you invalidating this one.")
         }
         if let htableValue = key.withCString({gravity_hash_lookup_cstring(htable, $0)?.pointee}) {
-            if let closure = GravityValue(gValue: htableValue).getClosure(gravity: gravity, sender: self) {
+            let value = GravityValue(gValue: htableValue)
+            if let closure = value.getClosure(gravity: gravity, sender: self) {
                 if let index = closure.gClosure.pointee.f?.pointee.index {
-                    return GravityValue(gValue: gInstance.pointee.ivars[Int(index)])
+                    return GravityValue(optionalGValue: gInstance.pointee.ivars[Int(index)])
                 }else{
                     print("Gravity: Failed to obtain var \(key).")
                 }
             }
         }
-        return gravitySuper?.getVar(key) ?? .null
+        return gravitySuper?.getVar(key) ?? nil
     }
 }
 

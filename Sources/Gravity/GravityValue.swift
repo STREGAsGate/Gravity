@@ -11,8 +11,15 @@ import GravityC
 public struct GravityValue: GravityValueEmitting {
     public var gValue: gravity_value_t
 
+    @usableFromInline
     internal init(gValue: gravity_value_t) {
         self.gValue = gValue
+    }
+    
+    @usableFromInline
+    internal init?(optionalGValue gValue: gravity_value_t) {
+        guard gValue.isa != gravity_class_null else {return nil}
+        self.init(gValue: gValue)
     }
 }
 
@@ -122,7 +129,7 @@ extension GravityValue {
         case .float:
             return Int(gValue.f)
         case .string:
-            if let v = Int(getString()) {
+            if let v = Int(self.string) {
                 return v
             }
             fallthrough
@@ -157,7 +164,7 @@ extension GravityValue {
         case .int:
             return Float(getInt())
         case .string:
-            if let v = Float(getString()) {
+            if let v = Float(self.string) {
                 return v
             }
             fallthrough
@@ -174,7 +181,7 @@ extension GravityValue {
         case .int:
             return Double(getInt())
         case .string:
-            if let v = Double(getString()) {
+            if let v = Double(self.string) {
                 return v
             }
             fallthrough
@@ -235,18 +242,25 @@ extension GravityValue {
     internal init(_ value: StaticString, _ gravity: Gravity) {
         self.gValue = gravity_string_to_value(gravity.vm, value.utf8Start, UInt32(value.utf8CodeUnitCount))
     }
+    
     @inlinable
-    public func getString() -> String {
-        assert(valueType == .string, "Expected \"string\" but found \"\(valueType)\".")
+    internal var string: String {
+        assert(self.valueType == .string)
         let string = unsafeBitCast(gValue.p, to: UnsafeMutablePointer<gravity_string_t>.self)
         return String(cString: string.pointee.s)
+    }
+    
+    @inlinable
+    public func getString() -> String? {
+        guard self.valueType == .string else {return nil}
+        return self.string
     }
     
     @inlinable
     public func asString() -> String {
         switch self.valueType {
         case .string:
-            return getString()
+            return self.string
         default:
             return self.description
         }
@@ -261,13 +275,20 @@ extension GravityValue {
         let list = gravity_list_from_array(gravity?.vm, UInt32(values.count), &values)
         self.gValue = gravity_value_from_object(list)
     }
-    @inline(__always) @usableFromInline
-    internal func getList() -> Array<GravityValue> {
-        assert(valueType == .list, "Expected \"list\" but found \"\(valueType)\".")
+    
+    @inlinable
+    internal var array: Array<GravityValue> {
+        assert(self.valueType == .list)
         let list = unsafeBitCast(gValue.p, to: UnsafeMutablePointer<gravity_list_t>.self).pointee
         let array = list.array
         let buffer = UnsafeBufferPointer(start: array.p, count: array.n)
         return Array(buffer.map({GravityValue(gValue: $0)}))
+    }
+    
+    @inlinable
+    internal func getList() -> Array<GravityValue>? {
+        guard valueType == .list else {return nil}
+        return array
     }
 }
 
@@ -345,11 +366,11 @@ extension GravityValue: CustomStringConvertible {
         case .range:
             return "\(self.getRange() as Range<Int>)"
         case .string:
-            return self.getString()
+            return self.string
         case .bool:
             return "\(self.getBool())"
         case .list:
-            return "\(self.getList())"
+            return "\(self.array)"
         case .map:
             return "\(self.getMap())"
         default:

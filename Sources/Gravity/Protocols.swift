@@ -29,7 +29,7 @@ public protocol GravityVMReferencing {
 
 // MARK: - GravityGetValueExtended
 public protocol GravityGetVarExtended {
-    func getVar(_ key: String) -> GravityValue
+    func getVar(_ key: String) -> GravityValue?
 }
 extension GravityGetVarExtended {
     /**
@@ -37,8 +37,8 @@ extension GravityGetVarExtended {
      - parameter key: The name of the `var` as written in the gravity script.
      */
     @inline(__always)
-    public func getVar(_ key: String) -> Bool {
-        return getVar(key).getBool()
+    public func getVar(_ key: String) -> Bool? {
+        return getVar(key)?.getBool()
     }
     
     /**
@@ -46,8 +46,8 @@ extension GravityGetVarExtended {
      - parameter key: The name of the `var` as written in the gravity script.
      */
     @inline(__always)
-    public func getVar<T: BinaryInteger>(_ key: String) -> T {
-        return getVar(key).getInt()
+    public func getVar<T: BinaryInteger>(_ key: String) -> T? {
+        return getVar(key)?.getInt()
     }
     
     /**
@@ -55,8 +55,8 @@ extension GravityGetVarExtended {
      - parameter key: The name of the `var` as written in the gravity script.
      */
     @inline(__always)
-    public func getVar(_ key: String) -> Float {
-        return getVar(key).asFloat()
+    public func getVar(_ key: String) -> Float? {
+        return getVar(key)?.asFloat()
     }
     
     /**
@@ -64,8 +64,8 @@ extension GravityGetVarExtended {
      - parameter key: The name of the `var` as written in the gravity script.
      */
     @inline(__always)
-    public func getVar(_ key: String) -> Double {
-        return getVar(key).asDouble()
+    public func getVar(_ key: String) -> Double? {
+        return getVar(key)?.asDouble()
     }
     
     /**
@@ -73,8 +73,8 @@ extension GravityGetVarExtended {
      - parameter key: The name of the `var` as written in the gravity script.
      */
     @inline(__always)
-    public func getVar(_ key: String) -> String {
-        return getVar(key).getString()
+    public func getVar(_ key: String) -> String? {
+        return getVar(key)?.getString()
     }
 }
 
@@ -83,19 +83,12 @@ public protocol GravityGetVarExtendedVMReferencing: GravityGetVarExtended, Gravi
 extension GravityGetVarExtendedVMReferencing {
     @inline(__always)
     public func getVar(_ key: String) -> GravityClosure? {
-        return getVar(key).getClosure(gravity: _gravity, sender: self as? GravityValueConvertible)
+        return getVar(key)?.getClosure(gravity: _gravity, sender: self as? GravityValueConvertible)
     }
     
     @inlinable
     public func getVar(_ key: String) throws -> GravityInstance? {
-        let value = getVar(key)
-        if value == .null {
-            throw "Gravity Error: Failed to find Instance named \(key)."
-        }
-        let valueType = value.valueType
-        if valueType != .instance {
-            throw "Gravity Error: Expected Instance for key \(key). Found \(valueType)."
-        }
+        guard let value = getVar(key) else {return nil}
         return value.getInstance(gravity: _gravity)
     }
 }
