@@ -14,7 +14,7 @@ final class GravityExtendingTests: XCTestCase {
     func testHostGetClientVar() throws {
         try gravity.compile("var randomValue = \(randomValue); func main() {}")
         try gravity.runMain()
-        let value = gravity.getVar("randomValue")
+        let value = gravity.getVar("randomValue")!
         XCTAssertEqual(value.getInt(), randomValue)
     }
     
@@ -22,7 +22,7 @@ final class GravityExtendingTests: XCTestCase {
         gravity.setVar("randomValue", to: randomValue)
         try gravity.compile("extern var randomValue; func main() {}")
         try gravity.runMain()
-        let value = gravity.getVar("randomValue")
+        let value = gravity.getVar("randomValue")!
         XCTAssertEqual(value.getInt(), randomValue)
     }
     
@@ -46,14 +46,14 @@ final class GravityExtendingTests: XCTestCase {
     func testHostGetClientInstance() throws {
         try gravity.compile("class TheThing {}; var theThing = TheThing(); func main() {}")
         try gravity.runMain()
-        let value = try gravity.getInstance("theThing")
+        let value = gravity.getInstance("theThing")!
         XCTAssertEqual(value.gravityClassName, "TheThing")
     }
     
     func testHostGetClientInstanceVar() throws {
         try gravity.compile("class TheThing {var myVar1; func myFunc(randomValue) { return randomValue}; var myVar2;}; var theThing = TheThing(); func main() {theThing.myVar2 = \(randomValue); theThing.myVar1 = 33}")
         try gravity.runMain()
-        let instance = try gravity.getInstance("theThing")
+        let instance = gravity.getInstance("theThing")!
         XCTAssertEqual(instance.getVar("myVar2"), randomValue)
         XCTAssertEqual(instance.getVar("myVar1"), 33)
     }
@@ -62,12 +62,12 @@ final class GravityExtendingTests: XCTestCase {
         let gValue = gravity.createValue(randomValue)
         try gravity.compile("class TheThing {func myFunc(randomValue) {return randomValue}}; var theThing = TheThing(); func main() {}")
         try gravity.runMain()
-        let value = try gravity.getInstance("theThing").runFunc("myFunc", withArguments: gValue)
+        let value = try gravity.getInstance("theThing")!.runFunc("myFunc", withArguments: gValue)
         XCTAssertEqual(value.getInt(), randomValue)
     }
     
     func testHostCreateClientClass() throws {
-        let theThingClass = gravity.createClass(named: "TheThing")
+        let theThingClass = gravity.createClass("TheThing")
         theThingClass.addVar("myVar")
         theThingClass.addFunc("myFunc") { gravity, sender, args in
             return "success!"
@@ -75,7 +75,7 @@ final class GravityExtendingTests: XCTestCase {
         try gravity.compile("extern class TheThing; var theThing = TheThing(); func main() {}")
         try gravity.runMain()
 
-        let instance = try gravity.getInstance("theThing")
+        let instance = gravity.getInstance("theThing")!
 
         let gValue = gravity.createValue(randomValue)
         instance.setVar("myVar", to: gValue)

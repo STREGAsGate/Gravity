@@ -32,6 +32,8 @@ let package = Package(
             .define("_CRT_SECURE_NO_WARNINGS", .when(platforms: [.windows])),
             // Windows doesn't support PIC flag
             .unsafeFlags(["-fPIC"], .when(platforms: .any(except: .windows))),
+            
+            .unsafeFlags(["-w"]),
         ], linkerSettings: [
             //For math functions
             .linkedLibrary("m", .when(platforms: .any(except: .windows))),

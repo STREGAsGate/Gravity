@@ -286,7 +286,7 @@ extension GravityValue {
     }
     
     @inlinable
-    internal func getList() -> Array<GravityValue>? {
+    public func getList() -> Array<GravityValue>? {
         guard valueType == .list else {return nil}
         return array
     }
@@ -396,11 +396,11 @@ extension GravityValue: CustomReflectable {
         case .float:
             return Mirror(reflecting: self.asDouble())
         case .string:
-            return Mirror(reflecting: self.getString())
+            return Mirror(reflecting: self.string)
         case .bool:
             return Mirror(reflecting: self.getBool())
         case .list:
-            return Mirror(reflecting: self.getList())
+            return Mirror(reflecting: self.array)
         case .map:
             return Mirror(reflecting: self.getMap())
         default:

@@ -134,7 +134,7 @@ extension GravitySetVarExtended {
      - parameter key: The name of the `extern var` as written in the gravity script.
      */
     @inline(__always)
-    public func setVar(_ key: String, to value: GravityValueConvertible) {
+    public func setVar(_ key: String, to value: GravityInstance) {
         self.setVar(key, to: value.gravityValue)
     }
 }

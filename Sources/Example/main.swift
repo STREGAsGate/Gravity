@@ -22,7 +22,7 @@ gravity.setFunc("doSomethingElse") { gravity, args in
 
 
 // Create a new class for editing
-let gravityClass = gravity.createClass(named: "MyClass")
+let gravityClass = gravity.createClass("MyClass")
 
 // Give the class an instance variable
 gravityClass.addVar("iVar1")
@@ -58,7 +58,7 @@ do {
     
     
     // Get a var by name and print it's value
-    print(gravity.getVar("itsTen"))
+    print(gravity.getVar("itsTen")!)
     
     // Run an existing `func` in the gravity script
     try gravity.runFunc("doSomethingShared")
@@ -68,16 +68,17 @@ do {
     
     
     // Get an instance from a `var` in the gravity script
-    let instance = try gravity.getInstance("internalInstance")
-    
-    // Assign a value to a `var` in the `Instance`
-    instance.setVar("iVar1", to: ["Yes" : 66])
-    
-    // Get a `var` from an `Instance` and print it's result
-    print("internalInstance.iVar1:", instance.getVar("iVar1"))
-    
-    // Run the func we set on the class of the instance on the instance
-    print("internalInstance.iFunc1:", try instance.runFunc("iFunc1"))
+    if let instance = gravity.getInstance("internalInstance") {
+        
+        // Assign a value to a `var` in the `Instance`
+        instance.setVar("iVar1", to: ["Yes" : 66])
+        
+        // Get a `var` from an `Instance` and print it's result
+        print("internalInstance.iVar1:", instance.getVar("iVar1")!)
+        
+        // Run the func we set on the class of the instance on the instance
+        print("internalInstance.iFunc1:", try instance.runFunc("iFunc1"))
+    }
 }catch{
     print(error)
     fatalError()
