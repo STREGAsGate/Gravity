@@ -1,5 +1,5 @@
 /**
- * Copyright © 2022 Dustin Collins (Strega's Gate)
+ * Copyright © 2023 Dustin Collins (Strega's Gate)
  * All Rights Reserved.
  * Licensed under MIT License
  *
@@ -288,7 +288,9 @@ extension GravityValue {
     @inlinable
     public func getList() -> Array<GravityValue>? {
         guard valueType == .list else {return nil}
-        return array
+        let a = array
+        guard a.isEmpty == false else {return nil}
+        return a
     }
 }
 
